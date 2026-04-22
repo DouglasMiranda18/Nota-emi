@@ -581,6 +581,61 @@ tbody tr:last-child td { border-bottom: none; }
   .form-grid { grid-template-columns: 1fr; }
   .payment-methods { grid-template-columns: 1fr 1fr; }
 }
+@media(max-width:600px) {
+  /* Navbar: 2 linhas (logo/acoes + busca) para nao estourar */
+  .nav-top { height: auto; padding: 12px 14px; flex-wrap: wrap; gap: 10px; }
+  .logo-icon { width: 34px; height: 34px; font-size: 18px; }
+  .logo-text { font-size: 20px; }
+  .nav-actions { margin-left: 0; gap: 6px; flex: 1; justify-content: flex-end; }
+  .nav-btn { padding: 8px 10px; font-size: 12px; }
+  .nav-search { order: 3; width: 100%; max-width: none; flex: 0 0 100%; }
+  .nav-search input { font-size: 16px; padding: 11px 14px 11px 44px; }
+
+  /* Ritmo vertical */
+  .section { padding: 44px 16px; }
+  .hero { min-height: auto; }
+  .hero-inner { padding: 44px 16px; }
+  .hero h1 { font-size: clamp(30px, 9vw, 44px); }
+  .hero p { font-size: 15px; }
+
+  /* Grids */
+  .prod-grid { grid-template-columns: 1fr; gap: 14px; }
+  .cat-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Layouts com padding grande */
+  .catalog-layout, .cart-layout, .checkout-layout, .account-layout, .prod-page { padding: 20px 16px; }
+
+  /* Carrinho (pagina) */
+  .cart-item { grid-template-columns: 64px 1fr; align-items: start; }
+  .cart-item-img { width: 64px; height: 64px; font-size: 30px; }
+  .cart-item > div:last-child {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .cart-item-price, .cart-item-remove { text-align: left; }
+  .cart-summary { position: static; top: auto; }
+
+  /* Inputs no iOS: 16px evita zoom ao focar */
+  .form-input, .coupon-input, .sort-select, .table-search input { font-size: 16px; }
+  .table-search input { width: 100%; }
+
+  /* Toast nao pode ter min-width em telas estreitas */
+  .toast-container { right: 12px; left: 12px; bottom: 12px; }
+  .toast { min-width: unset; width: 100%; }
+
+  /* Pagamento: 1 coluna em telas pequenas */
+  .payment-methods { grid-template-columns: 1fr; }
+  .footer-main { padding: 36px 16px; }
+}
+@media(max-width:420px) {
+  /* Acoes podem quebrar em 2 linhas */
+  .nav-actions { flex-wrap: wrap; justify-content: space-between; width: 100%; }
+  .nav-btn { flex: 1 1 30%; justify-content: center; }
+  .cat-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
