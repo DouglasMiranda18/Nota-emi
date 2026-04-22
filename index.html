@@ -392,6 +392,14 @@ footer { background: var(--c-navy); color: rgba(255,255,255,.6); }
   width: 240px; background: var(--c-navy); flex-shrink: 0;
   display: flex; flex-direction: column;
   position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto;
+  z-index: 1200; transition: transform .25s ease;
+}
+.admin-menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1190; display: none; }
+.admin-menu-overlay.open { display: block; }
+.admin-menu-btn {
+  width: 38px; height: 38px; border: 1px solid var(--c-border); border-radius: 8px;
+  background: #fff; color: var(--c-navy); cursor: pointer; display: none;
+  place-items: center; font-size: 20px; flex-shrink: 0;
 }
 .admin-logo { padding: 20px; border-bottom: 1px solid var(--c-navy-soft); }
 .admin-logo .logo-text { font-size: 20px; }
@@ -493,6 +501,25 @@ tbody tr:last-child td { border-bottom: none; }
 .log-msg.info { color: var(--c-blue); }
 .log-msg.warn { color: var(--c-yellow); }
 
+/* ===== NF AVULSA (VENDA FISICA) ===== */
+.nf-avulsa-help {
+  font-size: 13px;
+  color: var(--c-muted);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.nf-item-row {
+  display: grid;
+  grid-template-columns: 1.6fr .6fr .7fr .8fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+.nf-item-row .form-input { width: 100%; }
+.nf-item-row .btn-sm { white-space: nowrap; }
+.nf-avulsa-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.nf-avulsa-actions .sort-select { min-width: 220px; }
+
 /* ===== LOGIN ===== */
 .login-page { min-height: 100vh; background: linear-gradient(135deg, var(--c-navy) 0%, var(--c-navy-soft) 100%); display: flex; align-items: center; justify-content: center; padding: 24px; }
 .login-card { background: #fff; border-radius: 16px; width: 100%; max-width: 420px; overflow: hidden; box-shadow: var(--shadow-xl); }
@@ -571,7 +598,12 @@ tbody tr:last-child td { border-bottom: none; }
 }
 @media(max-width:768px) {
   .admin-sidebar { transform: translateX(-100%); }
+  .admin-sidebar.open { transform: translateX(0); }
   .admin-main { margin-left: 0; }
+  .admin-menu-btn { display: grid; }
+  .admin-topbar { padding: 0 16px; gap: 10px; }
+  .admin-topbar h2 { font-size: 18px; flex: 1; min-width: 0; }
+  .admin-topbar-actions { gap: 8px; }
   .hero-stats { flex-direction: column; gap: 16px; }
   .prod-grid { grid-template-columns: repeat(2, 1fr); }
   .cat-grid { grid-template-columns: repeat(3, 1fr); }
@@ -629,6 +661,14 @@ tbody tr:last-child td { border-bottom: none; }
   /* Pagamento: 1 coluna em telas pequenas */
   .payment-methods { grid-template-columns: 1fr; }
   .footer-main { padding: 36px 16px; }
+  .admin-sidebar { width: min(280px, 84vw); }
+  .admin-content { padding: 18px 14px; }
+  .admin-topbar-actions > span { display: none; }
+
+  /* NF Avulsa: linhas viram empilhadas */
+  .nf-item-row { grid-template-columns: 1fr; }
+  .nf-item-row .btn-sm { width: 100%; }
+  .nf-avulsa-actions .sort-select { width: 100%; min-width: 0; }
 }
 @media(max-width:420px) {
   /* Acoes podem quebrar em 2 linhas */
@@ -642,6 +682,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 <!-- ===== TOAST CONTAINER ===== -->
 <div class="toast-container" id="toastContainer"></div>
+<div class="admin-menu-overlay" id="adminMenuOverlay" onclick="closeAdminMenu()"></div>
 
 <!-- ===== CART DRAWER ===== -->
 <div class="cart-drawer-overlay" id="cartOverlay" onclick="closeCart()"></div>
@@ -1115,7 +1156,7 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </nav>
     <div class="admin-main">
-      <div class="admin-topbar"><h2>Dashboard</h2><div class="admin-topbar-actions"><span style="font-size:13px;color:var(--c-muted)">Hoje: 22/01/2025</span><button class="btn-sm orange" onclick="showToast('Relatório exportado!','success')">⬇ Exportar</button></div></div>
+      <div class="admin-topbar"><button class="admin-menu-btn" onclick="openAdminMenu()" aria-label="Abrir menu">☰</button><h2>Dashboard</h2><div class="admin-topbar-actions"><span style="font-size:13px;color:var(--c-muted)">Hoje: 22/01/2025</span><button class="btn-sm orange" onclick="showToast('Relatório exportado!','success')">⬇ Exportar</button></div></div>
       <div class="admin-content">
         <div class="kpi-grid">
           <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-label">Faturamento Hoje</div><div class="kpi-value">R$ 18.440</div><div class="kpi-trend up">▲ +14,2% vs ontem</div></div>
@@ -1192,7 +1233,7 @@ tbody tr:last-child td { border-bottom: none; }
       <div class="admin-nav-group"><div class="admin-nav-label">Sistema</div><a class="admin-nav-item" onclick="navigate('home')"><span class="admin-nav-icon">🛒</span> Ver Loja</a></div>
     </nav>
     <div class="admin-main">
-      <div class="admin-topbar"><h2>Gestão de Pedidos</h2><div class="admin-topbar-actions"><button class="btn-sm orange" onclick="showToast('Exportando pedidos...','success')">⬇ Exportar CSV</button></div></div>
+      <div class="admin-topbar"><button class="admin-menu-btn" onclick="openAdminMenu()" aria-label="Abrir menu">☰</button><h2>Gestão de Pedidos</h2><div class="admin-topbar-actions"><button class="btn-sm orange" onclick="showToast('Exportando pedidos...','success')">⬇ Exportar CSV</button></div></div>
       <div class="admin-content">
         <div class="kpi-grid">
           <div class="kpi-card"><div class="kpi-icon">📦</div><div class="kpi-label">Pedidos Hoje</div><div class="kpi-value">47</div><div class="kpi-trend up">▲ +8 vs média</div></div>
@@ -1242,7 +1283,7 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </nav>
     <div class="admin-main">
-      <div class="admin-topbar"><h2>Produtos</h2><div class="admin-topbar-actions"><button class="btn-sm orange" onclick="showToast('Produto adicionado!','success')">＋ Novo Produto</button></div></div>
+      <div class="admin-topbar"><button class="admin-menu-btn" onclick="openAdminMenu()" aria-label="Abrir menu">☰</button><h2>Produtos</h2><div class="admin-topbar-actions"><button class="btn-sm orange" onclick="showToast('Produto adicionado!','success')">＋ Novo Produto</button></div></div>
       <div class="admin-content">
         <div class="table-card">
           <div class="table-toolbar">
@@ -1279,7 +1320,7 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </nav>
     <div class="admin-main">
-      <div class="admin-topbar"><h2>Controle de Estoque</h2><div class="admin-topbar-actions"><button class="btn-sm orange" onclick="showToast('Ajuste registrado!','success')">＋ Ajustar Estoque</button><button class="btn-sm outline" style="margin-left:8px" onclick="showToast('Exportando...','success')">⬇ Exportar</button></div></div>
+      <div class="admin-topbar"><button class="admin-menu-btn" onclick="openAdminMenu()" aria-label="Abrir menu">☰</button><h2>Controle de Estoque</h2><div class="admin-topbar-actions"><button class="btn-sm orange" onclick="showToast('Ajuste registrado!','success')">＋ Ajustar Estoque</button><button class="btn-sm outline" style="margin-left:8px" onclick="showToast('Exportando...','success')">⬇ Exportar</button></div></div>
       <div class="admin-content">
         <div class="kpi-grid">
           <div class="kpi-card"><div class="kpi-icon">📦</div><div class="kpi-label">Total de SKUs</div><div class="kpi-value">1.247</div><div class="kpi-trend up">▲ +18 este mês</div></div>
@@ -1320,7 +1361,7 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </nav>
     <div class="admin-main">
-      <div class="admin-topbar"><h2>Emissão de Notas Fiscais</h2><div class="admin-topbar-actions"><span class="badge badge-success" style="font-size:12px;padding:6px 12px">● SEFAZ Conectado</span><button class="btn-sm outline" style="margin-left:8px" onclick="showToast('Exportando XML...','success')">⬇ Exportar XMLs</button></div></div>
+      <div class="admin-topbar"><button class="admin-menu-btn" onclick="openAdminMenu()" aria-label="Abrir menu">☰</button><h2>Emissão de Notas Fiscais</h2><div class="admin-topbar-actions"><span class="badge badge-success" style="font-size:12px;padding:6px 12px">● SEFAZ Conectado</span><button class="btn-sm outline" style="margin-left:8px" onclick="showToast('Exportando XML...','success')">⬇ Exportar XMLs</button></div></div>
       <div class="admin-content">
 
         <div class="kpi-grid">
@@ -1330,78 +1371,157 @@ tbody tr:last-child td { border-bottom: none; }
           <div class="kpi-card"><div class="kpi-icon">🔄</div><div class="kpi-label">Canceladas</div><div class="kpi-value">3</div><div class="kpi-trend">Este mês</div></div>
         </div>
 
-        <!-- NF DETAIL -->
-        <div class="nf-grid">
-          <div class="nf-card">
-            <h3>🧾 Detalhe da Nota Fiscal</h3>
-            <div class="nf-row"><span class="nf-key">Nº do Pedido</span><span class="nf-val">#CM-20248820</span></div>
-            <div class="nf-row"><span class="nf-key">Cliente</span><span class="nf-val">Construtora Alpha LTDA</span></div>
-            <div class="nf-row"><span class="nf-key">CNPJ</span><span class="nf-val">24.812.340/0001-22</span></div>
-            <div class="nf-row"><span class="nf-key">Tipo de Documento</span><span class="nf-val">NF-e (Nota Fiscal Eletrônica)</span></div>
-            <div class="nf-row"><span class="nf-key">Natureza da Operação</span><span class="nf-val">Venda de Mercadorias</span></div>
-            <div class="nf-row"><span class="nf-key">Valor Total</span><span class="nf-val" style="color:var(--c-orange);font-size:18px">R$ 4.820,00</span></div>
-            <div class="nf-row"><span class="nf-key">Data de Emissão</span><span class="nf-val">22/01/2025 — 14:32</span></div>
-            <div class="nf-row"><span class="nf-key">Série</span><span class="nf-val">1 — Nº 000.004.820</span></div>
-            <div class="nf-row"><span class="nf-key">Chave NF-e</span><span class="nf-val td-id" style="font-size:11px;font-family:monospace">3525012345678901234560550010000048201924282000</span></div>
-            <div class="nf-row"><span class="nf-key">Status SEFAZ</span><span class="nf-val"><span class="badge badge-warning" id="nfStatusBadge">⏳ Aguardando Emissão</span></span></div>
-
-            <div class="nf-progress" id="nfProgress" style="display:none">
-              <div class="nf-progress-steps">
-                <div class="nf-progress-fill" id="nfProgressFill" style="width:0%"></div>
-                <span class="nf-step done" id="nfStep1">Validação</span>
-                <span class="nf-step" id="nfStep2">Autorização</span>
-                <span class="nf-step" id="nfStep3">SEFAZ</span>
-                <span class="nf-step" id="nfStep4">Emissão</span>
-              </div>
-            </div>
-
-            <div style="margin-top:20px">
-              <div style="font-size:12px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">📋 Itens da Nota</div>
-              <table><thead><tr><th>Produto</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead>
-              <tbody>
-                <tr><td>Cimento CP-II 32 — 50kg</td><td>40 sc</td><td>R$ 35,90</td><td>R$ 1.436,00</td></tr>
-                <tr><td>Areia Lavada Média — m³</td><td>8 m³</td><td>R$ 180,00</td><td>R$ 1.440,00</td></tr>
-                <tr><td>Brita Nº 1 — m³</td><td>5 m³</td><td>R$ 195,00</td><td>R$ 975,00</td></tr>
-                <tr><td>Tijolo Cerâmico 9F</td><td>500 un</td><td>R$ 0,97</td><td>R$ 485,00</td></tr>
-                <tr><td>Argamassa AC-III — saco 20kg</td><td>10 sc</td><td>R$ 48,40</td><td>R$ 484,00</td></tr>
-              </tbody></table>
-            </div>
+        <div class="table-card" style="margin-top:0">
+          <div class="tabs" style="padding:0 20px">
+            <button class="tab-btn active" id="nfTabPedido" onclick="switchNfTab('pedido')">Por Pedido</button>
+            <button class="tab-btn" id="nfTabAvulsa" onclick="switchNfTab('avulsa')">Avulsa (Venda Física)</button>
           </div>
+          <div style="padding:20px">
+            <div id="nfPanePedido">
+              <!-- NF DETAIL (POR PEDIDO) -->
+              <div class="nf-grid">
+                <div class="nf-card">
+                  <h3>🧾 Detalhe da Nota Fiscal</h3>
+                  <div class="nf-row"><span class="nf-key">Nº do Pedido</span><span class="nf-val">#CM-20248820</span></div>
+                  <div class="nf-row"><span class="nf-key">Cliente</span><span class="nf-val">Construtora Alpha LTDA</span></div>
+                  <div class="nf-row"><span class="nf-key">CNPJ</span><span class="nf-val">24.812.340/0001-22</span></div>
+                  <div class="nf-row"><span class="nf-key">Tipo de Documento</span><span class="nf-val">NF-e (Nota Fiscal Eletrônica)</span></div>
+                  <div class="nf-row"><span class="nf-key">Natureza da Operação</span><span class="nf-val">Venda de Mercadorias</span></div>
+                  <div class="nf-row"><span class="nf-key">Valor Total</span><span class="nf-val" style="color:var(--c-orange);font-size:18px">R$ 4.820,00</span></div>
+                  <div class="nf-row"><span class="nf-key">Data de Emissão</span><span class="nf-val">22/01/2025 — 14:32</span></div>
+                  <div class="nf-row"><span class="nf-key">Série</span><span class="nf-val">1 — Nº 000.004.820</span></div>
+                  <div class="nf-row"><span class="nf-key">Chave NF-e</span><span class="nf-val td-id" style="font-size:11px;font-family:monospace">3525012345678901234560550010000048201924282000</span></div>
+                  <div class="nf-row"><span class="nf-key">Status SEFAZ</span><span class="nf-val"><span class="badge badge-warning" id="nfStatusBadge">⏳ Aguardando Emissão</span></span></div>
 
-          <div>
-            <div class="nf-card">
-              <div class="nf-status-big" id="nfStatusBlock">
-                <div class="nf-status-icon">⏳</div>
-                <div class="nf-status-label" id="nfStatusTitle">Aguardando Emissão</div>
-                <div class="nf-status-desc" id="nfStatusDesc">A nota fiscal ainda não foi transmitida à SEFAZ.</div>
-              </div>
-              <div class="nf-btns">
-                <button class="nf-btn nf-btn-primary" onclick="emitirNota()">🧾 Emitir Nota Fiscal</button>
-                <button class="nf-btn nf-btn-secondary" onclick="reprocessarNota()">🔄 Reprocessar</button>
-                <button class="nf-btn nf-btn-outline" onclick="verDanfe()">📄 Visualizar DANFE</button>
-                <button class="nf-btn nf-btn-outline" onclick="downloadXML()">⬇ Download XML</button>
+                  <div class="nf-progress" id="nfProgress" style="display:none">
+                    <div class="nf-progress-steps">
+                      <div class="nf-progress-fill" id="nfProgressFill" style="width:0%"></div>
+                      <span class="nf-step done" id="nfStep1">Validação</span>
+                      <span class="nf-step" id="nfStep2">Autorização</span>
+                      <span class="nf-step" id="nfStep3">SEFAZ</span>
+                      <span class="nf-step" id="nfStep4">Emissão</span>
+                    </div>
+                  </div>
+
+                  <div style="margin-top:20px">
+                    <div style="font-size:12px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">📋 Itens da Nota</div>
+                    <table><thead><tr><th>Produto</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead>
+                    <tbody>
+                      <tr><td>Cimento CP-II 32 — 50kg</td><td>40 sc</td><td>R$ 35,90</td><td>R$ 1.436,00</td></tr>
+                      <tr><td>Areia Lavada Média — m³</td><td>8 m³</td><td>R$ 180,00</td><td>R$ 1.440,00</td></tr>
+                      <tr><td>Brita Nº 1 — m³</td><td>5 m³</td><td>R$ 195,00</td><td>R$ 975,00</td></tr>
+                      <tr><td>Tijolo Cerâmico 9F</td><td>500 un</td><td>R$ 0,97</td><td>R$ 485,00</td></tr>
+                      <tr><td>Argamassa AC-III — saco 20kg</td><td>10 sc</td><td>R$ 48,40</td><td>R$ 484,00</td></tr>
+                    </tbody></table>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="nf-card">
+                    <div class="nf-status-big" id="nfStatusBlock">
+                      <div class="nf-status-icon">⏳</div>
+                      <div class="nf-status-label" id="nfStatusTitle">Aguardando Emissão</div>
+                      <div class="nf-status-desc" id="nfStatusDesc">A nota fiscal ainda não foi transmitida à SEFAZ.</div>
+                    </div>
+                    <div class="nf-btns">
+                      <button class="nf-btn nf-btn-primary" onclick="emitirNota()">🧾 Emitir Nota Fiscal</button>
+                      <button class="nf-btn nf-btn-secondary" onclick="reprocessarNota()">🔄 Reprocessar</button>
+                      <button class="nf-btn nf-btn-outline" onclick="verDanfe()">📄 Visualizar DANFE</button>
+                      <button class="nf-btn nf-btn-outline" onclick="downloadXML()">⬇ Download XML</button>
+                    </div>
+                  </div>
+
+                  <div class="nf-card" style="margin-top:16px">
+                    <h3>🖥 Log do Sistema</h3>
+                    <div id="nfLog">
+                      <div class="log-item"><span class="log-time">14:32:01</span><span class="log-msg info">Pedido #CM-20248820 recebido no módulo fiscal</span></div>
+                      <div class="log-item"><span class="log-time">14:32:02</span><span class="log-msg info">Validando dados do emitente...</span></div>
+                      <div class="log-item"><span class="log-time">14:32:02</span><span class="log-msg ok">✓ Dados do emitente validados</span></div>
+                      <div class="log-item"><span class="log-time">14:32:03</span><span class="log-msg warn">⚠ Aguardando confirmação de pagamento</span></div>
+                      <div class="log-item"><span class="log-time">14:32:05</span><span class="log-msg info">Status: AGUARDANDO_EMISSAO</span></div>
+                    </div>
+                  </div>
+
+                  <!-- LISTA NOTAS -->
+                  <div class="nf-card" style="margin-top:16px">
+                    <h3>📋 Últimas Notas</h3>
+                    <div class="nf-row"><span class="nf-key">#000.004.819</span><span class="nf-val"><span class="badge badge-success">Emitida</span></span></div>
+                    <div class="nf-row"><span class="nf-key">#000.004.818</span><span class="nf-val"><span class="badge badge-success">Emitida</span></span></div>
+                    <div class="nf-row"><span class="nf-key">#000.004.817</span><span class="nf-val"><span class="badge badge-danger">Erro</span></span></div>
+                    <div class="nf-row"><span class="nf-key">#000.004.816</span><span class="nf-val"><span class="badge badge-success">Emitida</span></span></div>
+                    <div class="nf-row"><span class="nf-key">#000.004.815</span><span class="nf-val"><span class="badge badge-navy">Cancelada</span></span></div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="nf-card" style="margin-top:16px">
-              <h3>🖥 Log do Sistema</h3>
-              <div id="nfLog">
-                <div class="log-item"><span class="log-time">14:32:01</span><span class="log-msg info">Pedido #CM-20248820 recebido no módulo fiscal</span></div>
-                <div class="log-item"><span class="log-time">14:32:02</span><span class="log-msg info">Validando dados do emitente...</span></div>
-                <div class="log-item"><span class="log-time">14:32:02</span><span class="log-msg ok">✓ Dados do emitente validados</span></div>
-                <div class="log-item"><span class="log-time">14:32:03</span><span class="log-msg warn">⚠ Aguardando confirmação de pagamento</span></div>
-                <div class="log-item"><span class="log-time">14:32:05</span><span class="log-msg info">Status: AGUARDANDO_EMISSAO</span></div>
-              </div>
-            </div>
+            <div id="nfPaneAvulsa" style="display:none">
+              <!-- NF AVULSA (VENDA FISICA) -->
+              <div class="nf-grid">
+                <div class="nf-card">
+                  <h3>🧾 Emissão Avulsa</h3>
+                  <div style="font-size:12px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Dados do Cliente</div>
 
-            <!-- LISTA NOTAS -->
-            <div class="nf-card" style="margin-top:16px">
-              <h3>📋 Últimas Notas</h3>
-              <div class="nf-row"><span class="nf-key">#000.004.819</span><span class="nf-val"><span class="badge badge-success">Emitida</span></span></div>
-              <div class="nf-row"><span class="nf-key">#000.004.818</span><span class="nf-val"><span class="badge badge-success">Emitida</span></span></div>
-              <div class="nf-row"><span class="nf-key">#000.004.817</span><span class="nf-val"><span class="badge badge-danger">Erro</span></span></div>
-              <div class="nf-row"><span class="nf-key">#000.004.816</span><span class="nf-val"><span class="badge badge-success">Emitida</span></span></div>
-              <div class="nf-row"><span class="nf-key">#000.004.815</span><span class="nf-val"><span class="badge badge-navy">Cancelada</span></span></div>
+                  <div class="form-grid">
+                    <div class="form-group full"><label class="form-label">Nome / Razão Social</label><input class="form-input" id="nfAClientName" placeholder="Ex.: João da Silva / Construtora XPTO LTDA"></div>
+                    <div class="form-group"><label class="form-label">CPF / CNPJ</label><input class="form-input" id="nfADoc" placeholder="000.000.000-00"></div>
+                    <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="nfAPhone" placeholder="(11) 99999-9999"></div>
+                    <div class="form-group full"><label class="form-label">Natureza da Operação</label><input class="form-input" id="nfANature" value="Venda de Mercadorias (Venda Física / Balcão)"></div>
+                  </div>
+                  <div class="nf-avulsa-help">Use este modo para emitir uma NF-e de uma venda feita fora do site (balcão/entrega direta). É um simulador de emissão e não integra com SEFAZ de verdade.</div>
+
+                  <div style="margin-top:18px">
+                    <div style="font-size:12px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Itens</div>
+                    <div class="nf-avulsa-actions">
+                      <select class="sort-select" id="nfAProdSelect"></select>
+                      <button class="btn-sm outline" onclick="addAvulsaFromCatalog()">+ Adicionar Produto</button>
+                      <button class="btn-sm orange" onclick="addAvulsaItemRow()">+ Item Manual</button>
+                      <button class="btn-sm outline" onclick="clearAvulsaItems()">Limpar Itens</button>
+                    </div>
+                    <div id="nfAItems"></div>
+                    <div class="summary-row total" style="margin-top:14px"><span>Total</span><span id="nfATotal">R$ 0,00</span></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="nf-card">
+                    <div class="nf-status-big" id="nfAStatusBlock">
+                      <div class="nf-status-icon" id="nfAStatusIcon">🧾</div>
+                      <div class="nf-status-label" id="nfAStatusTitle">Pronta para Emissão</div>
+                      <div class="nf-status-desc" id="nfAStatusDesc">Preencha os dados e clique em emitir.</div>
+                      <div style="margin-top:12px">
+                        <span class="badge badge-navy" id="nfAStatusBadge">Avulsa</span>
+                        <span class="badge badge-warning" id="nfAStatusBadge2">⏳ Aguardando</span>
+                      </div>
+                    </div>
+                    <div class="nf-progress" id="nfAProgress" style="display:none;margin-top:10px">
+                      <div class="nf-progress-steps">
+                        <div class="nf-progress-fill" id="nfAProgressFill" style="width:0%"></div>
+                        <span class="nf-step" id="nfAStep1">Validação</span>
+                        <span class="nf-step" id="nfAStep2">Autorização</span>
+                        <span class="nf-step" id="nfAStep3">SEFAZ</span>
+                        <span class="nf-step" id="nfAStep4">Emissão</span>
+                      </div>
+                    </div>
+                    <div class="nf-btns">
+                      <button class="nf-btn nf-btn-primary" onclick="emitirNotaAvulsa()">🧾 Emitir NF-e Avulsa</button>
+                      <button class="nf-btn nf-btn-secondary" onclick="reprocessarNotaAvulsa()">🔄 Reprocessar</button>
+                      <button class="nf-btn nf-btn-outline" onclick="verDanfeAvulsa()">📄 Visualizar DANFE</button>
+                      <button class="nf-btn nf-btn-outline" onclick="downloadXMLAvulsa()">⬇ Download XML</button>
+                    </div>
+                  </div>
+
+                  <div class="nf-card" style="margin-top:16px">
+                    <h3>🖥 Log Avulso</h3>
+                    <div id="nfALog"></div>
+                  </div>
+
+                  <div class="nf-card" style="margin-top:16px">
+                    <h3>📋 Últimas Notas Avulsas</h3>
+                    <div id="nfALast"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1570,6 +1690,7 @@ function changeQty(delta) {
 
 // ===== NAVIGATION =====
 function navigate(screen) {
+  closeAdminMenu();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const target = document.getElementById('screen-'+screen);
   if(target) { target.classList.add('active'); window.scrollTo(0,0); }
@@ -1579,9 +1700,27 @@ function navigate(screen) {
   if(screen==='checkout') renderCheckout();
   if(screen==='admin-produtos') renderAdminProdTable();
   if(screen==='admin-estoque') renderEstoqueTable();
+  if(screen==='admin-notas') {
+    const tab = localStorage.getItem('cm_nf_tab') || 'pedido';
+    switchNfTab(tab);
+    initNfAvulsa();
+  }
   if(screen==='product' && !currentProduct) openProduct(1);
   if(screen==='product') renderProducts('relatedProducts', 4);
   updateCartBadges(); renderCartDrawer();
+}
+
+// ===== ADMIN MOBILE MENU =====
+function openAdminMenu() {
+  const activeAdmin = document.querySelector('.screen.active .admin-sidebar');
+  const overlay = document.getElementById('adminMenuOverlay');
+  if(activeAdmin) activeAdmin.classList.add('open');
+  if(overlay) overlay.classList.add('open');
+}
+function closeAdminMenu() {
+  document.querySelectorAll('.admin-sidebar.open').forEach(sidebar=>sidebar.classList.remove('open'));
+  const overlay = document.getElementById('adminMenuOverlay');
+  if(overlay) overlay.classList.remove('open');
 }
 
 // ===== CART DRAWER =====
@@ -1600,7 +1739,7 @@ function showToast(msg, type='') {
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
   t.className='toast '+(type||'');
-  t.innerHTML = (type==='success'?'✅ ':'type'==='error'?'❌ ':'🔔 ') + msg;
+  t.innerHTML = (type==='success'?'✅ ':type==='error'?'❌ ':'🔔 ') + msg;
   c.appendChild(t);
   setTimeout(()=>{ t.style.animation='slideOut .3s ease forwards'; setTimeout(()=>t.remove(),300); }, 3000);
 }
@@ -1676,11 +1815,297 @@ function reprocessarNota() {
 function verDanfe() { showToast('Abrindo visualizador DANFE...','success'); }
 function downloadXML() { showToast('XML da NF-e baixado com sucesso!','success'); }
 
+// ===== NF AVULSA (VENDA FISICA) =====
+let nfAvulsaState = 'ready'; // ready | processing | success
+let nfAvulsaInited = false;
+let nfAvulsaLastIssued = null;
+
+function switchNfTab(which) {
+  const btnPedido = document.getElementById('nfTabPedido');
+  const btnAvulsa = document.getElementById('nfTabAvulsa');
+  const panePedido = document.getElementById('nfPanePedido');
+  const paneAvulsa = document.getElementById('nfPaneAvulsa');
+  if(!btnPedido || !btnAvulsa || !panePedido || !paneAvulsa) return;
+
+  const isAvulsa = which === 'avulsa';
+  localStorage.setItem('cm_nf_tab', isAvulsa ? 'avulsa' : 'pedido');
+  btnPedido.classList.toggle('active', !isAvulsa);
+  btnAvulsa.classList.toggle('active', isAvulsa);
+  panePedido.style.display = isAvulsa ? 'none' : 'block';
+  paneAvulsa.style.display = isAvulsa ? 'block' : 'none';
+
+  if(isAvulsa) initNfAvulsa();
+}
+
+function fmtBRL(n) { return 'R$ ' + (Number(n)||0).toFixed(2).replace('.',','); }
+function nowHMS(d=new Date()) {
+  return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}`;
+}
+function genFakeNFeKey() {
+  // 44 digitos (apenas para demo)
+  let s = '';
+  for(let i=0;i<44;i++) s += Math.floor(Math.random()*10);
+  return s;
+}
+
+function getAvulsaNotes() {
+  try { return JSON.parse(localStorage.getItem('cm_nf_avulsa') || '[]'); } catch { return []; }
+}
+function saveAvulsaNotes(notes) { localStorage.setItem('cm_nf_avulsa', JSON.stringify(notes)); }
+
+function renderAvulsaLastNotes() {
+  const box = document.getElementById('nfALast');
+  if(!box) return;
+  const notes = getAvulsaNotes().slice(0, 6);
+  if(!notes.length) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--c-muted);padding:8px 0">Nenhuma nota avulsa emitida ainda.</div>';
+    return;
+  }
+  box.innerHTML = notes.map(n=>`
+    <div class="nf-row">
+      <span class="nf-key">#${n.number}</span>
+      <span class="nf-val">
+        <span class="badge ${n.status==='Emitida'?'badge-success':'badge-warning'}">${n.status}</span>
+      </span>
+    </div>
+    <div style="margin:-6px 0 10px 0;font-size:12px;color:var(--c-muted)">
+      ${n.client} · ${fmtBRL(n.total)} · ${n.issuedAt}
+    </div>
+  `).join('');
+}
+
+function addAvulsaLog(msg, type='info') {
+  const log = document.getElementById('nfALog');
+  if(!log) return;
+  const div = document.createElement('div');
+  div.className = 'log-item';
+  div.innerHTML = `<span class="log-time">${nowHMS()}</span><span class="log-msg ${type}">${msg}</span>`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function initNfAvulsa() {
+  const select = document.getElementById('nfAProdSelect');
+  const items = document.getElementById('nfAItems');
+  if(!select || !items) return;
+
+  if(!nfAvulsaInited) {
+    // popular select do catalogo
+    select.innerHTML = '<option value=\"\">Selecionar produto do catálogo...</option>' +
+      PRODUCTS.map(p=>`<option value="${p.id}">${p.name} (${p.unit})</option>`).join('');
+
+    // primeira linha de item
+    items.innerHTML = '';
+    addAvulsaItemRow({ desc: '', qty: 1, unit: 'un', price: 0 });
+
+    // log inicial
+    const log = document.getElementById('nfALog');
+    if(log) log.innerHTML = '';
+    addAvulsaLog('Módulo de NF-e Avulsa pronto para emissão.', 'info');
+
+    nfAvulsaInited = true;
+  }
+
+  // reset visual se voltar para a tela
+  renderAvulsaLastNotes();
+  updateAvulsaTotal();
+}
+
+function addAvulsaItemRow(prefill=null) {
+  const wrap = document.getElementById('nfAItems');
+  if(!wrap) return;
+  const p = prefill || {};
+  const row = document.createElement('div');
+  row.className = 'nf-item-row';
+  row.innerHTML = `
+    <input class="form-input" placeholder="Descrição do item" value="${(p.desc||'').replaceAll('"','&quot;')}">
+    <input class="form-input" placeholder="Qtd" type="number" min="1" step="1" value="${Number(p.qty||1)}">
+    <input class="form-input" placeholder="Unidade" value="${(p.unit||'un').replaceAll('"','&quot;')}">
+    <input class="form-input" placeholder="Vlr Unit (R$)" type="number" min="0" step="0.01" value="${(p.price ?? '').toString()}">
+    <button class="btn-sm outline" onclick="removeAvulsaItemRow(this)">Remover</button>
+  `;
+  wrap.appendChild(row);
+  row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updateAvulsaTotal));
+  updateAvulsaTotal();
+}
+
+function removeAvulsaItemRow(btn) {
+  const row = btn?.closest?.('.nf-item-row');
+  if(row) row.remove();
+  const wrap = document.getElementById('nfAItems');
+  if(wrap && wrap.children.length === 0) addAvulsaItemRow();
+  updateAvulsaTotal();
+}
+
+function addAvulsaFromCatalog() {
+  const select = document.getElementById('nfAProdSelect');
+  if(!select || !select.value) { showToast('Selecione um produto do catálogo para adicionar.', 'error'); return; }
+  const id = parseInt(select.value);
+  const p = PRODUCTS.find(x=>x.id===id);
+  if(!p) return;
+  addAvulsaItemRow({ desc: `${p.name}`, qty: 1, unit: p.unit, price: p.price });
+  showToast('Produto adicionado na NF avulsa.', 'success');
+}
+
+function getAvulsaItems() {
+  const wrap = document.getElementById('nfAItems');
+  if(!wrap) return [];
+  return Array.from(wrap.querySelectorAll('.nf-item-row')).map(r=>{
+    const inputs = r.querySelectorAll('input');
+    const desc = (inputs[0]?.value || '').trim();
+    const qty = Math.max(0, parseInt(inputs[1]?.value || '0'));
+    const unit = (inputs[2]?.value || 'un').trim();
+    const price = Math.max(0, parseFloat((inputs[3]?.value || '0').toString().replace(',','.')));
+    return { desc, qty, unit, price };
+  }).filter(i=>i.desc && i.qty > 0);
+}
+
+function updateAvulsaTotal() {
+  const totalEl = document.getElementById('nfATotal');
+  if(!totalEl) return;
+  const total = getAvulsaItems().reduce((acc,i)=>acc + (i.qty*i.price), 0);
+  totalEl.textContent = fmtBRL(total);
+}
+
+function clearAvulsaItems() {
+  const wrap = document.getElementById('nfAItems');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  addAvulsaItemRow({ desc: '', qty: 1, unit: 'un', price: 0 });
+  showToast('Itens limpos.', 'success');
+}
+
+function collectAvulsaPayload() {
+  const client = (document.getElementById('nfAClientName')?.value || '').trim();
+  const doc = (document.getElementById('nfADoc')?.value || '').trim();
+  const phone = (document.getElementById('nfAPhone')?.value || '').trim();
+  const nature = (document.getElementById('nfANature')?.value || '').trim();
+  const items = getAvulsaItems();
+  const total = items.reduce((acc,i)=>acc + (i.qty*i.price), 0);
+
+  if(!client) { showToast('Informe o nome/razão social do cliente.', 'error'); return null; }
+  if(!items.length) { showToast('Adicione pelo menos 1 item na nota.', 'error'); return null; }
+
+  return { client, doc, phone, nature, items, total };
+}
+
+function setAvulsaStatus({ icon, title, desc, badge2, badge2Class }) {
+  const i = document.getElementById('nfAStatusIcon');
+  const t = document.getElementById('nfAStatusTitle');
+  const d = document.getElementById('nfAStatusDesc');
+  const b2 = document.getElementById('nfAStatusBadge2');
+  if(i && icon) i.textContent = icon;
+  if(t && title) t.textContent = title;
+  if(d && desc) d.textContent = desc;
+  if(b2 && badge2) {
+    b2.className = 'badge ' + (badge2Class || 'badge-warning');
+    b2.textContent = badge2;
+  }
+}
+
+function resetAvulsaProgress() {
+  const progress = document.getElementById('nfAProgress');
+  const fill = document.getElementById('nfAProgressFill');
+  if(progress) progress.style.display = 'none';
+  if(fill) fill.style.width = '0%';
+  ['nfAStep1','nfAStep2','nfAStep3','nfAStep4'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.remove('done');
+  });
+}
+
+function emitirNotaAvulsa() {
+  if(nfAvulsaState === 'processing') return;
+  if(nfAvulsaState === 'success') { showToast('Nota avulsa já emitida! Use Reprocessar para emitir outra.', ''); return; }
+
+  const payload = collectAvulsaPayload();
+  if(!payload) return;
+
+  nfAvulsaState = 'processing';
+  resetAvulsaProgress();
+
+  const progress = document.getElementById('nfAProgress');
+  const fill = document.getElementById('nfAProgressFill');
+  if(progress) progress.style.display = 'block';
+  if(fill) fill.style.width = '0%';
+
+  setAvulsaStatus({
+    icon: '⏳',
+    title: 'Processando Emissão',
+    desc: 'Aguarde enquanto a nota avulsa é transmitida à SEFAZ (simulado)...',
+    badge2: '⏳ Processando...',
+    badge2Class: 'badge-info'
+  });
+
+  addAvulsaLog(`Iniciando emissão NF-e avulsa para ${payload.client}...`, 'info');
+  addAvulsaLog(`Natureza: ${payload.nature || 'Venda Física'}`, 'info');
+  addAvulsaLog(`Total: ${fmtBRL(payload.total)}`, 'info');
+
+  setTimeout(()=>{ if(fill) fill.style.width='25%'; document.getElementById('nfAStep1')?.classList.add('done'); addAvulsaLog('✓ Validação de itens e dados do destinatário concluída', 'ok'); }, 700);
+  setTimeout(()=>{ if(fill) fill.style.width='55%'; document.getElementById('nfAStep2')?.classList.add('done'); addAvulsaLog('✓ Autorizando junto ao emitente', 'ok'); }, 1700);
+  setTimeout(()=>{ if(fill) fill.style.width='80%'; document.getElementById('nfAStep3')?.classList.add('done'); addAvulsaLog('✓ SEFAZ retornou cStat 100 - Autorizado (simulado)', 'ok'); }, 3000);
+  setTimeout(()=>{
+    if(fill) fill.style.width='100%';
+    document.getElementById('nfAStep4')?.classList.add('done');
+
+    const dt = new Date();
+    const number = (Math.floor(4800 + Math.random()*800)).toString().padStart(6,'0');
+    const key = genFakeNFeKey();
+    const issuedAt = dt.toLocaleString('pt-BR');
+    nfAvulsaLastIssued = { number, key, issuedAt, ...payload };
+
+    const notes = getAvulsaNotes();
+    notes.unshift({ number, key, issuedAt, client: payload.client, total: payload.total, status: 'Emitida' });
+    saveAvulsaNotes(notes.slice(0, 20));
+
+    addAvulsaLog(`✓ NF-e avulsa #${number} emitida com SUCESSO`, 'ok');
+    addAvulsaLog(`Chave: ${key}`, 'info');
+
+    setAvulsaStatus({
+      icon: '✅',
+      title: 'Emitida com Sucesso',
+      desc: `NF-e avulsa #${number} autorizada (simulado).`,
+      badge2: '✓ Emitida',
+      badge2Class: 'badge-success'
+    });
+
+    nfAvulsaState = 'success';
+    renderAvulsaLastNotes();
+    showToast(`NF-e avulsa #${number} emitida!`, 'success');
+  }, 4200);
+}
+
+function reprocessarNotaAvulsa() {
+  nfAvulsaState = 'ready';
+  nfAvulsaLastIssued = null;
+  resetAvulsaProgress();
+  const log = document.getElementById('nfALog');
+  if(log) log.innerHTML = '';
+  addAvulsaLog('Reprocessamento iniciado. Pronto para nova emissão.', 'info');
+  setAvulsaStatus({
+    icon: '🧾',
+    title: 'Pronta para Emissão',
+    desc: 'Preencha os dados e clique em emitir.',
+    badge2: '⏳ Aguardando',
+    badge2Class: 'badge-warning'
+  });
+}
+
+function verDanfeAvulsa() {
+  if(!nfAvulsaLastIssued) { showToast('Emita uma nota avulsa primeiro.', 'error'); return; }
+  showToast(`Abrindo DANFE da NF-e avulsa #${nfAvulsaLastIssued.number}...`, 'success');
+}
+function downloadXMLAvulsa() {
+  if(!nfAvulsaLastIssued) { showToast('Emita uma nota avulsa primeiro.', 'error'); return; }
+  showToast(`XML da NF-e avulsa #${nfAvulsaLastIssued.number} baixado com sucesso!`, 'success');
+}
+
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', ()=>{
   renderProducts('homeProducts', 8);
   updateCartBadges();
   renderCartDrawer();
+  initNfAvulsa();
   // Demo: add 1 product to cart for better demo
   if(!cart.length) { addToCart(PRODUCTS[0], 2); addToCart(PRODUCTS[2], 1); }
 });
